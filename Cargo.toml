@@ -2,7 +2,7 @@
 name = "paseto_maker"
 authors = ["itsscb <dev@itsscb.de>"]
 license = "GPL-3.0"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 repository = "https://github.com/itsscb/paseto_maker"
 description = "This library provides high-level functionality for creating, handling, and managing PASETO tokens."
