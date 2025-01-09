@@ -25,7 +25,7 @@
 //!
 //! This library uses the `rusty_paseto` crate underneath and currently only supports PASETO Tokens V4.public.
 mod claims;
-mod errors;
+pub mod errors;
 mod maker;
 
 pub use claims::Claims;
