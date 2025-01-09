@@ -35,22 +35,19 @@ pub struct Maker<V: Version, P: Purpose> {
 ///
 /// - `new(private_key: &[u8; 64]) -> Self`
 ///   - Creates a new `Maker` instance with the given private and public keys.
-/// - `new_with_keypair() -> Self`
-///   - Generates a new keypair and creates a new `Maker` instance with the generated keys.
 /// - `new_keypair() -> ([u8; 64], [u8; 32])`
 ///   - Generates a new Ed25519 keypair and returns the private and public keys.
-/// - `private_key(&self) -> PasetoAsymmetricPrivateKey<V4, Public>`
-///   - Returns the private key as a `PasetoAsymmetricPrivateKey`.
-/// - `public_key(&self) -> PasetoAsymmetricPublicKey<V4, Public>`
-///   - Returns the public key as a `PasetoAsymmetricPublicKey`.
 /// - `create_token(&self, claims: &Claims) -> Result<String, TokenError>`
 ///   - Creates a new PASETO token with the given claims. Returns the token as a `String` or an error if the token creation fails.
+/// - `verify_token(&self, token: &str) -> Result<Claims, TokenError>`
+///   - Verifies a PASETO token. Returns the containing Claims or an error if the token verification fails.
 ///
 /// # Example
 ///
 /// ```rust
 /// use paseto_maker::{Maker, Claims, version::V4, purpose::Public};
-/// let maker = Maker::new_with_keypair().unwrap();
+/// let (priv_key, _) = Maker::new_keypair();
+/// let maker = Maker::new(&priv_key).expect("failed to create maker");
 /// let claims = Claims::new();
 /// let token = maker.create_token(&claims).unwrap();
 /// ```
@@ -73,22 +70,6 @@ impl Maker<V4, Public> {
         })
     }
 
-    /// # Errors
-    ///
-    /// This function will return an error if the key generation or Maker creation fails.
-    pub fn new_with_keypair() -> Result<Self, MakerError> {
-        // let (private_key, public_key) = Self::new_keypair();
-        let private_key = Self::new_private_key();
-        Self::new(&private_key)
-    }
-
-    #[must_use]
-    pub fn new_private_key() -> [u8; 64] {
-        let mut csprng = rand::rngs::OsRng;
-        let priv_key: ed25519_dalek::SigningKey = ed25519_dalek::SigningKey::generate(&mut csprng);
-        priv_key.to_keypair_bytes()
-    }
-
     #[must_use]
     pub fn new_keypair() -> ([u8; 64], [u8; 32]) {
         let mut csprng = rand::rngs::OsRng;
@@ -101,8 +82,7 @@ impl Maker<V4, Public> {
         PasetoAsymmetricPrivateKey::<pV4, pPublic>::from(&self.private_key)
     }
 
-    #[must_use]
-    pub fn public_key(&self) -> PasetoAsymmetricPublicKey<pV4, pPublic> {
+    fn public_key(&self) -> PasetoAsymmetricPublicKey<pV4, pPublic> {
         PasetoAsymmetricPublicKey::<pV4, pPublic>::from(&self.public_key)
     }
 
@@ -251,7 +231,8 @@ mod test {
 
     #[test]
     fn test_invalid_claims() {
-        let maker = Maker::new_with_keypair().expect("failed to create maker");
+        let (priv_key, _) = Maker::new_keypair();
+        let maker = Maker::new(&priv_key).expect("failed to create maker");
 
         let claims = Claims::new().with_issued_at("invalid RF3339 date");
         let token = maker.create_token(&claims);
@@ -260,7 +241,9 @@ mod test {
 
     #[test]
     fn test_create_token() {
-        let maker = Maker::new_with_keypair().expect("failed to create maker");
+        let (priv_key, _) = Maker::new_keypair();
+        let maker = Maker::new(&priv_key).expect("failed to create maker");
+
         let public_key = maker.public_key();
         let mut claims = Claims::new().with_issued_at("2027-09-18T03:42:15+02:00");
         claims.set_claim("sub", "this is the subject").unwrap();
